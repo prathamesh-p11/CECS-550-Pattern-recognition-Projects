@@ -1,0 +1,219 @@
+import numpy as np
+import pandas as pd
+
+def LoadData(ws, vs):
+    data = list()
+    f = open("Project2Data.txt")
+    data = f.readlines()
+        
+    #create list and set size of states
+    ws = list(range(0,len(data)))
+    vs = list(range(0,len(data)))
+    
+    #print(f"data = > \n {data}")
+    i = 0
+    for line in data:
+        currentLine = line.rstrip('\n').split(",")
+        ws[i] = currentLine[0]
+        vs[i] = currentLine[1]
+        i = i+1
+        
+    return ws,vs
+
+#calculate initial probabilities
+def CreateInitialProbs(ws,vs):
+    pw = []
+    pv = []
+    s = r = f = y = n = 0
+    
+    for h in ws:
+        if(h == "sunny"):
+            s += 1
+        elif(h == "foggy"):
+            f += 1
+        elif(h == "rainy"):
+            r += 1
+    #print(f"VS => {vs}")
+    
+    for o in vs:
+        if(o == "yes"):
+            y += 1
+        elif(o == "no"):
+            n += 1
+    
+    pw.append(s/1000)
+    pw.append(r/1000)
+    pw.append(f/1000)
+      
+    pv.append(y/1000)
+    pv.append(n/1000)
+    
+    #print(f"Counts = > {s} \n {r}\n {f}\n {y}\n {n}")
+    #print(f"Probs = > {pw} \n {pv} \n")
+    
+    return pw, pv
+        
+# This fucntion creates a_ij matrix	
+def CreateTransitionProbs(state, ws):
+    nstate = ws.count(state)
+    row = [0,0,0] #stores current state's row for transition matrix
+    i = 0
+        
+    while i < (len(ws)-1):
+        if(ws[i] == state):
+            if(ws[i+1] == 'sunny'):
+                row[0] +=1
+            elif(ws[i+1] == 'rainy'):
+                row[1] +=1
+            elif(ws[i+1] == 'foggy'):
+                row[2] +=1
+        i +=1
+    
+    if(state == 'sunny'):
+        row[0] += 1  #for current state
+    
+    j = 0
+    while j < len(row):
+        row[j] = (row[j] / nstate)
+        j += 1
+            
+    return row
+    
+
+    
+# This function creates b_jk matrix    
+def CreateEmitionProbs(state, ws,vs):
+    nstate = ws.count(state)
+    row = [0,0] #stores current state's row for transition matrix
+    i = 0
+        
+    while i < (len(ws)):
+        if(ws[i] == state):
+            if(vs[i] == 'yes'):
+                row[0] +=1
+            elif(vs[i] == 'no'):
+                row[1] +=1
+        i +=1
+    
+    j = 0
+    while j < len(row):
+        row[j] = (row[j] / nstate)
+        j += 1
+            
+    return row
+
+def CreateAlphas(V,a,b,initial_distribution):
+    n_states = V.shape[0]+1
+    alphas = np.zeros((n_states, a.shape[0]))
+
+    alphas[0, :] = initial_distribution
+    #using forward algorithm to calculate alphas
+    for x,y in zip(range(0, n_states), range(0, V.shape[0])):
+        for j in range(a.shape[0]):
+            alphas[x+1, j] = alphas[x].dot(a[:, j]) * b[j, V[y]]
+ 
+    return alphas
+
+            
+def RunVertibri(alphas, V, a, ws):
+    sequence = []
+    for i in range(V.shape[0]):
+        max = -999
+        index = -1
+        for j in range(a.shape[0]):
+            if(max<alphas.iloc[i][j]):
+                max = alphas.iloc[i][j]
+                index = j
+        if(index == 0):
+            sequence.append("sunny")
+        elif(index == 1):
+            sequence.append("rainy")
+        elif(index == 2):
+            sequence.append("foggy")
+        
+        
+    stateSize = [0,0,0]        
+    u = 0
+        
+    while u < (len(ws)):
+        if(ws[u] == "sunny"):
+            stateSize[0] += 1
+        elif(ws[u] == "rainy"):
+            stateSize[1] += 1
+        elif(ws[u] == "foggy"):
+            stateSize[2] += 1
+        u +=1
+    
+    prob = 0
+    for l in range(len(stateSize)):
+        prob = prob + ((stateSize[l]/1000) * alphas.iloc[-1][l])
+    
+    return sequence, prob
+
+
+def main():
+    #initialize
+    
+    #Vt
+    obs1 = ['no', 'no', 'no', 'yes', 'no', 'no', 'yes', 'yes', 'no', 'yes']
+    #converting 'yes' 'no' to 0 and 1
+    obs_arr = [0]*len(obs1) 
+    i = 0
+    for o in obs1:
+        if o == 'yes':
+            obs_arr[i] = 0
+        else:
+            obs_arr[i] = 1
+        i += 1
+    
+    #defining hidden and observable states
+    w = ['sunny', 'rainy', 'foggy']
+    v = ['yes','no']
+    data = list()
+    ws = list()  #hiddden states array
+    vs = list()  #observable states array
+    
+    
+    # Load Data
+    # Assume the last observation is for today
+    ws, vs = LoadData(ws, vs)
+    
+    
+    #Calculate initial probabilities
+    pw = list() #hidden states initial probability
+    pv = list() #observable/emmision initial probability
+    pw, pv = CreateInitialProbs(ws,vs)  
+    hs_prob = pd.Series(pw, index = w, name = 'HStates')
+    os_prob = pd.Series(pv, index = v, name = 'OStates')
+    print(f"Hidden states and observable states initial probabilities=> \n{hs_prob}\n{os_prob}")
+    
+    #transitional matrix
+    a = pd.DataFrame(columns = w, index = w)
+    for i in range(0,3):
+        a.loc[w[i]] = CreateTransitionProbs(w[i],ws)
+    print(f"\n\nTransition matrix => \n\n{a}")
+    print(f"\nCheck transision row sum => \n{a.sum(axis=1)}")
+    
+    #emmission matrix
+    b = pd.DataFrame(columns = v, index = w)
+    for i in range(0,3):
+        b.loc[w[i]] = CreateEmitionProbs(w[i],ws,vs)
+    print(f"\n\nEmission matrix => \n\n{b}")
+    print(f"\nCheck emmission row sum => \n{b.sum(axis=1)}")
+    
+    #calculate alphas - Evaluation problem using forward algorithm
+    a_arr = np.array(a)
+    b_arr = np.array(b)
+    Visible_obs = np.array(obs_arr)
+    initDist = np.array((1.0,0.0,0.0))
+    alpha = CreateAlphas(Visible_obs, a_arr, b_arr, initDist)
+    alpha = pd.DataFrame(data = alpha, columns = w, index = range(len(obs1)+1))
+    print(f"\n\nAlphas => \n {alpha}")
+    
+    #decoding problem using viterbi algorithm
+    path, probability = RunVertibri(alpha, Visible_obs, a_arr, ws)
+    print(f"\n Final path => {path}")
+    print(f"\n Probability => {probability}")
+          
+    
+if __name__ == "__main__" : main()
