@@ -3,6 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+'''
+Pattern Recognition Final Project
+Made by: Prathamesh Patil
+CSULB ID: 025910428
+'''
+
 # --------------------------------------------------------------------------------------------------
 # -------------------------------------- DATA PROCESSING -------------------------------------------
 # --------------------------------------------------------------------------------------------------
@@ -164,7 +170,7 @@ def pca(X, data):
     from sklearn.decomposition import PCA
     pca = PCA(n_components=2)
     principalComponents = pca.fit_transform(X)
-    principalComponentsDf = pd.DataFrame(data=principalComponents, columns=['Principal component 1', 'Principal component 2'])
+    principalComponentsDf = pd.DataFrame(data=principalComponents, columns=['principal component 1', 'principal component 2'])
     pcaDF = pd.concat([principalComponentsDf, data[['Class']]], axis=1)
     print(f"\nVARIANCE : {pca.explained_variance_ratio_.cumsum()}")
 
@@ -395,3 +401,46 @@ def main():
 
 
 if __name__ == "__main__": main()
+
+
+'''
+Dataset = breast cancer databases obtained from the University of Wisconsin
+#  Attribute                     Domain
+ -- -----------------------------------------
+ 1. Sample code number            id number
+ 2. Clump Thickness               1 - 10
+ 3. Uniformity of Cell Size       1 - 10
+ 4. Uniformity of Cell Shape      1 - 10
+ 5. Marginal Adhesion             1 - 10
+ 6. Single Epithelial Cell Size   1 - 10
+ 7. Bare Nuclei                   1 - 10
+ 8. Bland Chromatin               1 - 10
+ 9. Normal Nucleoli               1 - 10
+10. Mitoses                       1 - 10
+11. Class:                        (2 for benign, 4 for malignant)
+
+
+Missing attribute values: 16
+
+Class distribution:
+
+Benign: 458 (65.5%)
+Malignant: 241 (34.5%)
+
+Data Processing:
+the missing values in the columns are replaced by the median value of that column. since we observed that some
+# columns hav outliers, and mean is heavily affected by outliers, we fill them with medians.
+All columns are int except 'Bare Nuclei' is String - to represent '?'. We must first convert the column to int
+Removing outliers
+Printing frequency distribution
+
+
+Feature analysis:
+	Generate heat map
+	SelectKBest to select k best features
+
+
+KNN accuracy : 96.15% with k = 12
+ANN accuracy : 97% with 9 nodes in input layers, 4 nodes in hidden layer and single output node
+	
+'''

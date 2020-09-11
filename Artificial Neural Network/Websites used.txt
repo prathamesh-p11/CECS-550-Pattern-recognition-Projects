@@ -1,0 +1,34 @@
+
+http://www.cse.msu.edu/~ptan/dmbook/tutorials/tutorial4/tutorial4.html
+
+z score and Outliers:
+https://towardsdatascience.com/ways-to-detect-and-remove-the-outliers-404d16608dba
+
+BOXPLOTS: 
+https://towardsdatascience.com/understanding-boxplots-5e2df7bcbd51
+
+
+PCA code p1:
+https://github.com/csaiprashant/breast-cancer-wisconsin/blob/master/Breast%20Cancer%20Detection%20after%20Feature%20Reduction.ipynb
+
+PCA code p2:
+https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+
+frequency distribution plots:
+https://github.com/deepak525/Breast-Cancer-Visualization-and-Classification/blob/master/BreastCancer.ipynb
+
+
+PCA FULL EXPLAINATION IMP:
+https://www.youtube.com/watch?v=g-Hb26agBFg
+
+PCA analysing outputs:
+https://www.datacamp.com/community/tutorials/principal-component-analysis-in-python
+
+
+
+ANN:
+https://heartbeat.fritz.ai/building-a-neural-network-from-scratch-using-python-part-1-6d399df8d432
+
+https://github.com/risenW/Masterclass
+
+https://github.com/risenW/Masterclass/blob/master/NN_Master_class.ipynb
