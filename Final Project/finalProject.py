@@ -3,6 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+'''
+Pattern Recognition Final Project
+Made by: Prathamesh Patil
+CSULB ID: 025910428
+'''
+
 # --------------------------------------------------------------------------------------------------
 # -------------------------------------- DATA PROCESSING -------------------------------------------
 # --------------------------------------------------------------------------------------------------
@@ -70,7 +76,6 @@ def DataPreprocessing(dataset):
     dataset = dataset[(z < 3).all(axis=1)]
     print(f"\nAfter removing outliers dataset = [{dataset.shape}]")
 
-    '''
     # ----------------------------Frequency distribution----------------------------
     Columns = [col for col in dataset.columns[0:9]]
     for i in range(len(Columns)):
@@ -78,7 +83,6 @@ def DataPreprocessing(dataset):
                                                                                         shade=True).add_legend()
         plt.title(f"Frequency distribution of {col_names[i + 1]}")
         plt.show()
-    '''
 
     X = dataset.iloc[:, 0:9]
     y = dataset.iloc[:, -1]
@@ -126,9 +130,6 @@ def featureAnalysis(data, col_names):
 def split_data(X,y):
 
     from sklearn.model_selection import train_test_split
-    #Stratify makes proportional splits
-    #ex if y is a binary var with values 0 and 1 and there are 25% 0s and 75% 1s, then stratify will make sure that
-    #random split has 25% 0s and 75% 1s
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     return X_train, X_test, y_train, y_test
 
@@ -184,9 +185,9 @@ def pca(X, data):
     targets = [2,4]
     colors = ['g', 'r']
     for target, color in zip(targets, colors):
-        indicesToKeep = pcaDF['Class'] == target
-        ax.scatter(pcaDF.loc[indicesToKeep, 'principal component 1']
-                   , pcaDF.loc[indicesToKeep, 'principal component 2']
+        indices = pcaDF['Class'] == target
+        ax.scatter(pcaDF.loc[indices, 'principal component 1']
+                   , pcaDF.loc[indices, 'principal component 2']
                    , c=color
                    , s=50)
     ax.legend(targets)
@@ -219,7 +220,7 @@ def train_test(X_train, X_test, y_train, y_test, k):
 def hyperTuningParam(data, X, y, T, R1, R2):
     from sklearn.neighbors import KNeighborsClassifier
     KNN_classifier = KNeighborsClassifier()
-    print("\n\n\nHyper tuning parameters with number of groups for cross validation = ",T," and Range for optimizing k => [",R1,",",R2,"]")
+    print("\n\n\nHyper tuning parameters and range for optimizing k => [",R1,",",R2,"]")
     from sklearn.model_selection import GridSearchCV
     k_range = list(range(R1, R2))
     param_grid = dict(n_neighbors=k_range)
@@ -243,90 +244,94 @@ def hyperTuningParam(data, X, y, T, R1, R2):
 class ANN():
     np.random.seed(2)
 
-    def __init__(self, layers=[9, 4, 1], lr=0.001, epochs=200):
-        self.layers = layers
+    def __init__(self, layerParams=[9, 4, 1], lr=0.001, epochs=200):
+        self.layerParams = layerParams
         self.lr = lr
         self.wb = {}
-        self.cost = []
+        self.cost = []  #error cost to update weights in back propagation
         self.epochs = epochs
         self.X = None
         self.y = None
 
-    def _init_weights(self):
+    def initializeWeights(self):
         # initialize weights and biases
-        self.wb['W1'] = np.random.randn(self.layers[0], self.layers[1])
-        self.wb['W2'] = np.random.randn(self.layers[1], self.layers[2])
-        self.wb['b1'] = np.random.randn(self.layers[1], )
-        self.wb['b2'] = np.random.randn(self.layers[2], )
+        self.wb['W1'] = np.random.randn(self.layerParams[0], self.layerParams[1])
+        self.wb['W2'] = np.random.randn(self.layerParams[1], self.layerParams[2])
+        self.wb['b1'] = np.random.randn(self.layerParams[1], )
+        self.wb['b2'] = np.random.randn(self.layerParams[2], )
 
-    def _relu(self, Z):
+    #Activation functions and their derivatives
+    def activation_ReLU(self, Z):
         return np.maximum(0, Z)
 
-    def _sigmoid(self, Z):
+    def activation_sigmoid(self, Z):
         return 1.0 / (1.0 + np.exp(-Z))
 
-    def _dRelu(self, x):
+    def ReLU_der(self, x):
         x[x <= 0] = 0
         x[x > 0] = 1
         return x
 
+    #refered from online sources along with the formula
     # binary cross entropy loss
-    def _entropy_loss(self, Y, Yhat):
-        nsample = len(Y)
-        loss = -1 / nsample * (np.sum(np.multiply(np.log(Yhat), Y) + np.multiply((1 - Y), np.log(1 - Yhat))))
+    def entropy_loss(self, Y, y_out):
+        total_samples = len(Y)
+        loss = -1 / total_samples * (np.sum(np.multiply(np.log(y_out), Y) + np.multiply((1 - Y), np.log(1 - y_out))))
         loss = np.squeeze(loss)
         return loss
 
-    def _forward_prop(self):
+    def forwardProp(self):
         # forward propagation
         Z1 = self.X.dot(self.wb['W1']) + self.wb['b1']
-        A1 = self._relu(Z1)
+        A1 = self.activation_ReLU(Z1)
         Z2 = A1.dot(self.wb['W2']) + self.wb['b2']
-        yhat = self._sigmoid(Z2)
-        cost = self._entropy_loss(self.y, yhat)
+        y_out = self.activation_sigmoid(Z2)
+        cost = self.entropy_loss(self.y, y_out)
 
         # save parameters
         self.wb['Z1'] = Z1
         self.wb['A1'] = A1
         self.wb['Z2'] = Z2
 
-        return yhat, cost
+        return y_out, cost
 
-    def _backward_prop(self, yhat):
-        # Backpropagation
-        dl_wrt_yhat = -(np.divide(self.y, yhat) - np.divide((1 - self.y), (1 - yhat)))
-        dl_wrt_sig = yhat * (1 - yhat)
-        dl_wrt_z2 = dl_wrt_yhat * dl_wrt_sig
+    #learning phase using Back propagation
+    def backward_prop(self, y_out):
 
-        dl_wrt_A1 = dl_wrt_z2.dot(self.wb['W2'].T)
-        dl_wrt_w2 = self.wb['A1'].T.dot(dl_wrt_z2)
-        dl_wrt_b2 = np.sum(dl_wrt_z2, axis=0)
+        diff_y_out = -(np.divide(self.y, y_out) - np.divide((1 - self.y), (1 - y_out)))
+        diff_sig = y_out * (1 - y_out)
+        diff_z2 = diff_y_out * diff_sig
 
-        dl_wrt_z1 = dl_wrt_A1 * self._dRelu(self.wb['Z1'])
-        dl_wrt_w1 = self.X.T.dot(dl_wrt_z1)
-        dl_wrt_b1 = np.sum(dl_wrt_z1, axis=0)
+        diff_A1 = diff_z2.dot(self.wb['W2'].T)
+        diff_w2 = self.wb['A1'].T.dot(diff_z2)
+        diff_b2 = np.sum(diff_z2, axis=0)
 
-        # updates
-        self.wb['W1'] = self.wb['W1'] - self.lr * dl_wrt_w1
-        self.wb['W2'] = self.wb['W2'] - self.lr * dl_wrt_w2
-        self.wb['b1'] = self.wb['b1'] - self.lr * dl_wrt_b1
-        self.wb['b2'] = self.wb['b2'] - self.lr * dl_wrt_b2
+        diff_z1 = diff_A1 * self.ReLU_der(self.wb['Z1'])
+        diff_w1 = self.X.T.dot(diff_z1)
+        diff_b1 = np.sum(diff_z1, axis=0)
 
+        # updating leaned weights
+        self.wb['W1'] = self.wb['W1'] - self.lr * diff_w1
+        self.wb['W2'] = self.wb['W2'] - self.lr * diff_w2
+        self.wb['b1'] = self.wb['b1'] - self.lr * diff_b1
+        self.wb['b2'] = self.wb['b2'] - self.lr * diff_b2
+
+    #iterating to learn weights and biases
     def fit(self, X, y):
         self.X = X
         self.y = y
-        self._init_weights()
+        self.initializeWeights()
 
         for i in range(self.epochs):
-            yhat, loss = self._forward_prop()
+            y_out, loss = self.forwardProp()
             self.cost.append(loss)
-            self._backward_prop(yhat)
+            self.backward_prop(y_out)
 
     def predict(self, X):
         Z1 = X.dot(self.wb['W1']) + self.wb['b1']
-        A1 = self._relu(Z1)
+        A1 = self.activation_ReLU(Z1)
         Z2 = A1.dot(self.wb['W2']) + self.wb['b2']
-        pred = self._sigmoid(Z2)
+        pred = self.activation_sigmoid(Z2)
         return np.round(pred)
 
     def plot_loss(self):
@@ -336,12 +341,12 @@ class ANN():
         plt.ylabel("loss")
         plt.show()
 
-    def accuracy(self, y, yhat):
-        return int(sum((y == yhat)) / len(y) * 100)
+    #compare output with actual result from y_test
+    def accuracy(self, y, y_out):
+        return int(sum((y == y_out)) / len(y) * 100)
 # --------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
-
 
 
 def main():
@@ -351,12 +356,13 @@ def main():
     featureAnalysis(data, col_names)
     X = scaleFeatures(X)
 
+    #PCA inputs
     X_PCA = X
     data_PCA = data
 
+    #ANN inputs
     inputs = X
     outputs = y
-
     '''
     print(f"X b4 PCA: {X.shape}")
     print(f"y b4 PCA: {y.shape}")
@@ -384,7 +390,7 @@ def main():
     outputs = data.Class.values.reshape(outputs.shape[0], 1)  # IMPORTANT: RESHAPE TARGET TO 2D ARRAY
     X_train, X_test, y_train, y_test = split_data(inputs, outputs)
 
-    ann = ANN(layers=[9,8,1])
+    ann = ANN(layerParams=[9,8,1])
     ann.fit(X_train, y_train)
     pred = ann.predict(X_test)
     print(f"Neural Network Accuracy = {ann.accuracy(pred, y_test)}")
@@ -395,3 +401,49 @@ def main():
 
 
 if __name__ == "__main__": main()
+<<<<<<< HEAD:Artificial Neural Network/finalProject.py
+
+
+'''
+Dataset = breast cancer databases obtained from the University of Wisconsin
+#  Attribute                     Domain
+ -- -----------------------------------------
+ 1. Sample code number            id number
+ 2. Clump Thickness               1 - 10
+ 3. Uniformity of Cell Size       1 - 10
+ 4. Uniformity of Cell Shape      1 - 10
+ 5. Marginal Adhesion             1 - 10
+ 6. Single Epithelial Cell Size   1 - 10
+ 7. Bare Nuclei                   1 - 10
+ 8. Bland Chromatin               1 - 10
+ 9. Normal Nucleoli               1 - 10
+10. Mitoses                       1 - 10
+11. Class:                        (2 for benign, 4 for malignant)
+
+
+Missing attribute values: 16
+
+Class distribution:
+
+Benign: 458 (65.5%)
+Malignant: 241 (34.5%)
+
+Data Processing:
+the missing values in the columns are replaced by the median value of that column. since we observed that some
+# columns hav outliers, and mean is heavily affected by outliers, we fill them with medians.
+All columns are int except 'Bare Nuclei' is String - to represent '?'. We must first convert the column to int
+Removing outliers
+Printing frequency distribution
+
+
+Feature analysis:
+	Generate heat map
+	SelectKBest to select k best features
+
+
+KNN accuracy : 96.15% with k = 12
+ANN accuracy : 97% with 9 nodes in input layers, 4 nodes in hidden layer and single output node
+	
+'''
+=======
+>>>>>>> 7fd06de0c87b84730c0d3d369aaef6f06c944085:Artificial Neural Network/ANN.py

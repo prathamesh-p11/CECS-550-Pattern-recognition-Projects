@@ -401,6 +401,7 @@ def main():
 
 
 if __name__ == "__main__": main()
+<<<<<<< HEAD:Artificial Neural Network/finalProject.py
 
 
 '''
@@ -444,3 +445,5 @@ KNN accuracy : 96.15% with k = 12
 ANN accuracy : 97% with 9 nodes in input layers, 4 nodes in hidden layer and single output node
 	
 '''
+=======
+>>>>>>> 7fd06de0c87b84730c0d3d369aaef6f06c944085:Artificial Neural Network/ANN.py
