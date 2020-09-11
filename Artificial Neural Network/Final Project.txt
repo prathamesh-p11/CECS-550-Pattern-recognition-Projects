@@ -35,6 +35,6 @@ Feature analysis:
 
 
 KNN accuracy : 96.15% with k = 12
-ANN accuracy : 97% with 9 nodes in input layers, 4 nodes in hidden layer and single output node
+ANN accuracy : 97% with 9 nodes in input layers, 4 nodes in hidden layer and single output node  
 	
 
